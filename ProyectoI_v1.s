@@ -1,170 +1,176 @@
 .data
-    .align 2  # Align to 4-byte boundary for 32-bit architecture
-    input_start:  .word 0x2a0    # Start address of input list
-    input_end:    .word 0xda220  # End address of input list (892,788 bytes)
-    output_start: .word 0xda230  # Start address for output (after 16-byte separator)
-    output_end:   .word 0x113230  # End address for output (1KB space)
-    top10_start:  .word 0x113260  # Start address for top 10 (after another 16-byte separator)
+	texto: .asciz "los hobbits son un pueblo sencillo y muy antiguo mas numeroso en tiempos remotos que en la actualidad amaban la paz la tranquilidad y el cultivo de la buena tierra y no habia para ellos paraje mejor que un campo bien aprovechado y bien ordenado no entienden ni entendian ni gustan de maquinarias mas complicadas que una fragua un molino de agua o un telar de mano aunque fueron muy habiles con toda clase de herramientas en otros tiempos desconfiaban en general de la gente grande como nos llaman y ahora nos eluden con terror y es dificil encontrarlos tienen el oido agudo y la mirada penetrante y aunque engordan facilmente y nunca se apresuran si no es necesario se mueven con agilidad y destreza dominaron desde un principio el arte de desaparecer rapido y en silencio cuando la gente grande con la que no querian tropezar se les acercaba casualmente y han desarrollado este arte hasta el punto de que a los hombres puede parecerles verdadera magia pero los hobbits jamas han estudiado magia de ninguna indole y esas rapidas desapariciones se deben unicamente a una habilidad profesional que la herencia la practica y una intima amistad con la tierra han desarrollado tanto que es del todo inimitable para las razas mas grandes y desmayadas hola"
 
-.text
-.globl main
 
-main:
-    lw s0, input_start
-    lw s1, input_end
-    lw s2, output_start
-    lw s3, output_end
-    li s4, 16            # Offset between words in output (12 bytes word + 4 bytes counter)
-
-    mv t0, s0            # Current input pointer
-    mv t1, s2            # Current output pointer
-
-process_words:
-    bgeu t0, s1, find_top10
+    archivo_salida: .asciz "texto_procesado.txt"    @ Nombre del archivo de salida
     
-    # Check if current word is empty (starts with zero)
-    lbu t2, 0(t0)
-    beqz t2, next_input_word
+    .text
+    .global _start
 
-    # Check if word already exists in output
-    mv a0, t0
-    mv a1, s2
-    mv a2, t1
-    jal ra, find_duplicate
+_start:
+    LDR R0, =texto         
+    SUB SP, SP, #4000
+    MOV R1, SP
+    	MOV R8, #1           
+    BL procesar_texto         
+	BL apariciones_palabra
+	BL escribir_archivo
+    MOV R7, #1    
+	MOV R0, #0              
+    SWI 0
 
-    bnez a0, update_count
-    j copy_new_word
+procesar_texto:
+    PUSH {R4, R5, R6, R7, LR}
+    MOV R4, #0                  
+    MOV R5, #0                  
+	MOV R8, #0
+	
+recorrer_texto:
+    LDRB R6, [R0, R4]    
+	CMP R6, #0x23              
+    BEQ continuar 
+	CMP R6, #' '                
+    BEQ nueva_palabra        
+    CMP R6, #0                  
+    BEQ fin_texto                                       
+	STRB R6, [R1, R5]           
+    ADD R4, R4, #1              
+    ADD R5, R5, #1              
+    MOV R8, #1
+	B recorrer_texto            
 
-update_count:
-    lw t2, 12(a0)
-    addi t2, t2, 1
-    sw t2, 12(a0)
-    j next_input_word
+continuar: 
+	ADD R4, R4, #1
+	B recorrer_texto
 
-copy_new_word:
-    mv t2, t0
-    mv t3, t1
-    li t4, 11
+fin_texto:
+	CMP R8, #0
+	BEQ escribir_archivo
+	B nueva_palabra
+	
+nueva_palabra:
+    SUB R4, R4, #1                
+    LDRB R6, [R0, R4]        
+    CMP R6, #0x23
+	ADD R4, R4, #2
+  	MOV R2, R5
+	MOV R6, #0
+	STRB R6, [R1, R5]
+	BEQ recorrer_texto
 
-copy_loop:
-    lbu t5, 0(t2)
-    sb t5, 0(t3)
-    addi t2, t2, 1
-    addi t3, t3, 1
-    addi t4, t4, -1
-    beqz t5, end_copy
-    beqz t4, force_end
-    j copy_loop
+apariciones_palabra:
+	PUSH {R4, R5, R6, R7, LR}
+	MOV R3, #0
+	MOV R4, #0
+	MOV R5, #0
+	
+caracter_siguiente:
+	LDRB R6, [R0, R4]
+	CMP R6, #0
+	BEQ completado
+	LDRB R7, [R1, R5]
+	CMP R6, R7
+	BEQ son_iguales
+	MOV R5, #0
+	BNE siguiente_palabra
 
-force_end:
-    sb zero, 0(t3)
+son_iguales:
+	ADD R4, R4, #1
+	ADD R5, R5, #1
+	LDRB R6, [R0, R4]
+	LDRB R7, [R1, R5]
+	CMP R6, #' '
+	BEQ encontrar_igual
+	CMP R6, #0
+	BEQ encontrar_igual
+	BNE caracter_siguiente
+	
+siguiente_palabra:
+	ADD R4, R4, #1
+	LDRB R6, [R0, R4]
+	CMP R6, #' '
+	BEQ continuar_caracter
+	CMP R6, #0x23
+	BEQ continuar_caracter
+	CMP R6, #0
+	BEQ completado
+	BNE siguiente_palabra
+	
+continuar_caracter:
+	ADD R4, R4, #1
+	LDRB R6, [R0, R4]
+	CMP R6, #' '
+	BNE caracter_siguiente
+	ADD R4, R4, #1
+	B caracter_siguiente
+	
+encontrar_igual:
+	CMP R7, #0
+	BEQ encontrar_igual_aux
+	CMP R7, #0xaa
+	BEQ encontrar_igual_aux
+	B caracter_siguiente
+	
+encontrar_igual_aux:
+	ADD R3, R3, #1
+	MOV R5, #0
+	ADD R9, R0, R4
+	SUB R9, R9, R2
+	MOV R10, #0x23
+	
+cambiar_palabra:
+	STRB R10, [R9, R5]
+	ADD R5, R5, #1
+	CMP R5, R2
+	BNE cambiar_palabra
+	
+reinicio:
+	ADD R4, R4, #1
+	MOV R5, #0
+	MOV R9, #0
+	B caracter_siguiente
 
-end_copy:
-    sb zero, 11(t1)
-    li t5, 1
-    sw t5, 12(t1)
-    addi t1, t1, 16
-    bgeu t1, s3, done
+completado:
+	POP {R4, R5, R6, R7, LR}
+	MOV R11, #0
+	STRB R11, [R1, R2]
+	ADD R2, R2, #1
+	STRB R3, [R1, R2]
+	ADD R2, R2, #1
+	STRB R11, [R1, R2]
+	ADD R2, R2, #1
+	ADD R1, R1, R2
+	MOV R2, #0
+	B procesar_texto
+	
+escribir_archivo:
+    MOV R7, #5                      
+    LDR R0, =archivo_salida         
+    MOV R1, #0101                    
+    MOV R2, #0x1B                   
+    ORR R2, R2, #0x6                
+    SWI 0                          
+    CMP R0, #0              
+    BLT error                     
+    MOV R4, R0 
 
-next_input_word:
-    addi t0, t0, 1
-    lbu t2, 0(t0)
-    bnez t2, next_input_word
-    addi t0, t0, 1
-    j process_words
+    MOV R1, SP              
+    MOV R2, #4000                 
+    MOV R7, #4                   
+    MOV R0, R4                    
+    SWI 0                        
 
-done:
-    li a7, 10
-    ecall
+cerrar_archivo:
+    MOV R7, #6                      
+    MOV R0, R4                      
+    SWI 0
 
-# Function to find duplicate word
-# a0: address of current word
-# a1: start of output
-# a2: current end of output
-# Returns: a0 = address of duplicate word if found, 0 if not
-find_duplicate:
-    mv t5, a1
+error:
+    MOV R7, #1                      
+    MOV R0, #1                      
+    SWI 0
 
-find_loop:
-    bgeu t5, a2, not_found
-    mv t6, t5
-    mv a3, a0
-
-compare_loop:
-    lbu t2, 0(t6)
-    lbu t3, 0(a3)
-    bne t2, t3, next_word
-    beqz t2, found
-    addi t6, t6, 1
-    addi a3, a3, 1
-    j compare_loop
-
-next_word:
-    addi t5, t5, 16
-    j find_loop
-
-found:
-    mv a0, t5
-    ret
-
-not_found:
-    li a0, 0
-    ret
-
-find_top10:
-    lw a0, output_start
-    mv a1, t1
-    lw a2, top10_start
-    jal ra, get_top10
-
-    li a7, 10
-    ecall
-
-# Function to get top 10 most frequent words
-# a0: start of word list
-# a1: end of word list
-# a2: address to store top 10
-get_top10:
-    mv t0, a0
-    mv s5, a2
-    li t2, 10
-
-top10_loop:
-    beqz t2, top10_done
-    li t3, 0
-    mv t4, a0
-    mv t5, zero
-
-find_max:
-    bgeu t4, a1, max_found
-    # Ensure aligned load
-    andi t6, t4, -4
-    lw t6, 12(t6)
-    bleu t6, t3, next_max_word
-    mv t3, t6
-    mv t5, t4
-
-next_max_word:
-    addi t4, t4, 16
-    j find_max
-
-max_found:
-    beqz t5, top10_done
-
-    mv t4, t5
-    li t6, 16
-
-copy_top_word:
-    lbu a3, 0(t4)
-    sb a3, 0(s5)
-    addi t4, t4, 1
-    addi s5, s5, 1
-    addi t6, t6, -1
-    bnez t6, copy_top_word
-
-    sw zero, 12(t5)
-    addi t2, t2, -1
-    j top10_loop
-
-top10_done:
-    ret
+salida:
+    MOV R7, #1                      
+    MOV R0, #0                      
+    SWI 0
