@@ -7,7 +7,7 @@
 
 _start:
     LDR R0, =texto         
-    SUB SP, SP, #4000
+    SUB SP, SP, #16000
     MOV R1, SP
 	MOV R8, #1           
     BL procesar_texto         
@@ -153,7 +153,7 @@ escribir_archivo:
     MOV R4, R0 
 
     MOV R1, SP              
-    MOV R2, #4000                 
+    MOV R2, #16000                 
     MOV R7, #4                   
     MOV R0, R4                    
     SWI 0                        
