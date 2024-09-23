@@ -1,34 +1,6 @@
 import matplotlib.pyplot as plt
 import re
 
-
-
-# def graficacion():
-#     # Datos de ejemplo (rellenar con los tiempos obtenidos)
-#     hilos = [2, 3, 4, 5]
-#     tiempos2 = (8.28 + 9.07 + 8.67 + 8.43 + 8.82) / 5
-#     tiempos3 = (9.78 + 10.15 + 9.34 + 9.45 + 9.84) / 5
-#     tiempos4 = (10.09 + 10.15 + 10.04 + 10.02 + 10.06) / 5
-#     tiempos5 = (10.61 + 11.38 + 10.59 + 10.78 + 10.90) / 5
-#     tiempos = [tiempos2, tiempos3, tiempos4, tiempos5]  # Reemplaza con los tiempos reales obtenidos
-#
-#     tiempos2 = round(tiempos2, 2)
-#     tiempos3 = round(tiempos3, 2)
-#     tiempos4 = round(tiempos4, 2)
-#     tiempos5 = round(tiempos5, 2)
-#
-#     print(f'Tiempo 2 hilos: {tiempos2}')
-#     print(f'Tiempo 3 hilos: {tiempos3}')
-#     print(f'Tiempo 4 hilos: {tiempos4}')
-#     print(f'Tiempo 5 hilos: {tiempos5}')
-#
-#     plt.plot(hilos, tiempos, marker='o')
-#     plt.xlabel('Número de Hilos')
-#     plt.ylabel('Tiempo de Ejecución (ms)')
-#     plt.title('Número de Hilos vs Tiempo de Ejecución')
-#     plt.grid(True)
-#     plt.show()
-
 def limpiar_texto(texto):
     # Diccionario para reemplazar letras con tilde por letras sin tilde
     reemplazos = {
@@ -60,7 +32,7 @@ def limpiar_texto(texto):
 
 def procesar_archivo(input_file, output_file):
     with open(input_file, 'r', encoding='utf-8') as f:
-        contenido = f.read()
+        contenido = f.read(6496)  # Leer solo los primeros 6496 caracteres
 
     # Limpiar el contenido y asegurarse de que todo quede en una sola línea
     texto_limpio = limpiar_texto(contenido)
@@ -93,9 +65,6 @@ output_file = "C:\\Users\\crseg\\OneDrive\\Escritorio\\Proyecto_Arqui\\elQuijote
 archivo_entrada = output_file
 archivo_salida = 'C:\\Users\\crseg\\OneDrive\\Escritorio\\Proyecto_Arqui\\elQuijoteHEXA.txt'
 
+# Procesar solo los primeros 6496 caracteres del archivo
 procesar_archivo(input_file, output_file)
 texto_a_hexadecimal(archivo_entrada, archivo_salida)
-# Ejecutar la función de procesamiento
-
-#graficacion()
-
