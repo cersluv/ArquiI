@@ -86,16 +86,15 @@ def texto_a_hexadecimal(input_file, output_file):
                 outfile.write(f'{ord(char):02x}\n')
 
 # Rutas de archivo
-input_file = "C:\\Users\\crseg\\OneDrive\\Escritorio\\Proyecto_Arqui\\caperucita.txt"
-output_file = "C:\\Users\\crseg\\OneDrive\\Escritorio\\Proyecto_Arqui\\caperucitaEDITADA.txt"
+input_file = "/home/cersluv/Desktop/prueba_proy/arquiI/proyectoF/caperucita.txt"
+output_file = "/home/cersluv/Desktop/prueba_proy/arquiI/proyectoF/textoEDITADA.txt"
 
 # Especifica los archivos de entrada y salida
 archivo_entrada = output_file
-archivo_salida = 'C:\\Users\\crseg\\OneDrive\\Escritorio\\Proyecto_Arqui\\caperucitaHEXA.txt'
+archivo_salida = '/home/cersluv/Desktop/prueba_proy/arquiI/proyectoF/textoHEXA.txt'
 
 procesar_archivo(input_file, output_file)
 texto_a_hexadecimal(archivo_entrada, archivo_salida)
 # Ejecutar la función de procesamiento
 
 #graficacion()
-
