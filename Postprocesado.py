@@ -1,80 +1,95 @@
 import re
 import matplotlib.pyplot as plt
 
-def postprocesamiento(texto):
-    # Aquí se eliminan todos los \\x00 que aparezcan al final
-    texto = re.sub(r'(\\x00)+$', '', texto)
+def cleanHexText(text):
+    """
+    Limpia el texto hexadecimal eliminando caracteres innecesarios como \\x00
+    y convierte los números en formato hexadecimal a sus valores numéricos.
+    """
+    # Elimina \\x00 al final del texto
+    text = re.sub(r'(\\x00)+$', '', text)
 
-    # Luego se busca la última vez que aparezcan dos \\x00 seguidos, se elimina todo antes de esto
-    pos = texto.rfind('\\x00\\x00')
+    # Encuentra la última aparición de \\x00\\x00 y elimina todo lo anterior
+    pos = text.rfind('\\x00\\x00')
     if pos != -1:
-        # Aquí se va a eliminar todo lo que está antes, incluyendo los \\x00
-        # Se pone +4 porque son 4 caracteres
-        texto = texto[pos+4:]
-    # En caso de no encontrar \\x00 seguidos retorna el mismo texto
-    texto = texto
+        text = text[pos+4:]
 
-    # Ya teniendo el texto casi limpio, se eliminan todos los \\x00 que aparezcan en medio de palabras
-    texto = texto.replace('\\x00', '')
+    # Elimina todos los \\x00 en medio de las palabras
+    text = text.replace('\\x00', '')
 
-    # Finalmente, se retorna el texto con los números convertidos del formato \\x02 a un 2 por ejemplo
-    return re.sub(r'\\x([0-9a-fA-F]{2})', lambda match: str(int(match.group(1), 16)), texto)
+    # Convierte secuencias \\xXX a su valor numérico en ASCII
+    return re.sub(r'\\x([0-9a-fA-F]{2})', lambda match: str(int(match.group(1), 16)), text)
 
-def crear_diccionario(texto):
-    # Usamos una expresión regular para encontrar palabras seguidas de números
-    patron = r'([a-zA-Z]+)(\d+)'  # Grupo 1: palabra, Grupo 2: número
-    matches = re.findall(patron, texto)
+def createWordCountDictionary(text):
+    """
+    Crea un diccionario a partir del texto, donde las claves son palabras y los valores son sus conteos.
+    """
+    # Encuentra todas las palabras seguidas de números (palabras repetidas)
+    pattern = r'([a-zA-Z]+)(\d+)'  # Grupo 1: palabra, Grupo 2: número
+    matches = re.findall(pattern, text)
 
-    # Creamos el diccionario
-    diccionario = {}
-    for palabra, contador in matches:
-        diccionario[palabra] = int(contador)  # Convertimos el contador a entero
-        # Imprimir la palabra y el contador en consola mientras se va construyendo el diccionario
-        print(f"Palabra: {palabra}, Repeticiones: {contador}")
-    
-    diccionario_ordenado = dict(sorted(diccionario.items(), key=lambda item: item[1], reverse=True))
+    # Crea el diccionario de palabras y sus contadores
+    wordCountDictionary = {word: int(count) for word, count in matches}
 
-    return diccionario_ordenado
+    # Imprime cada palabra y su contador mientras se construye el diccionario
+    for word, count in wordCountDictionary.items():
+        print(f"Palabra: {word}, Repeticiones: {count}")
 
-def graficar_top_10(diccionario_ordenado):
-    # Obtener las 10 primeras palabras del diccionario ordenado
-    top_10_palabras = list(diccionario_ordenado.keys())[:10]
-    top_10_contadores = list(diccionario_ordenado.values())[:10]
-    
-    # Crear el histograma
-    plt.bar(top_10_palabras, top_10_contadores)
-    plt.xlabel('Palabras')
-    plt.ylabel('Contador')
-    plt.title('Top 10 Palabras por Frecuencia')
-    plt.xticks(rotation=45)
+    # Retorna el diccionario ordenado de mayor a menor por el número de repeticiones
+    return dict(sorted(wordCountDictionary.items(), key=lambda item: item[1], reverse=True))
+
+def plotTop10Words(wordCountDictionary):
+    """
+    Genera un histograma de las 10 palabras más frecuentes a partir de un diccionario de palabras.
+    """
+    # Obtiene las 10 palabras más frecuentes
+    top10Words = list(wordCountDictionary.keys())[:10]
+    top10Counts = list(wordCountDictionary.values())[:10]
+
+    # Configuración visual del histograma
+    plt.figure(figsize=(10, 6))  # Ajusta el tamaño de la gráfica
+    plt.bar(top10Words, top10Counts, color='skyblue')
+
+    # Etiquetas y título del gráfico
+    plt.xlabel('Palabras', fontsize=12)
+    plt.ylabel('Repeticiones', fontsize=12)
+    plt.title('Top 10 Palabras por Frecuencia', fontsize=14)
+    plt.xticks(rotation=45, fontsize=10)
+    plt.yticks(fontsize=10)
+
+    # Ajuste final para que todo se muestre correctamente
     plt.tight_layout()
+
+    # Muestra el gráfico
     plt.show()
-    
-def hex_a_ascii(input_file):
+
+def convertHexToAscii(inputFile):
+    """
+    Lee un archivo hexadecimal, lo convierte a ASCII, elimina secuencias no deseadas,
+    y luego genera un histograma con las palabras más frecuentes.
+    """
     try:
-        # Leer el archivo de texto en modo binario
-        with open(input_file, 'rb') as f:
-            contenido = f.read()
-        
-        # Convertir cada byte a ASCII o mantenerlo en hexadecimal si no es imprimible
-        ascii_content = ""
-        for byte in contenido:
-            # Aquí se define el rango de caracteres imprimibles en ascii
-            if 32 <= byte <= 126:  
-                ascii_content += chr(byte)
-            else:
-                # En caso de que no sea un ascii, se deja en hexa para ser tratado después
-                ascii_content += f'\\x{byte:02x}'
+        # Leer el archivo en modo binario
+        with open(inputFile, 'rb') as file:
+            content = file.read()
 
-        # Aquí se realiza el limpiamiento del texto, se eliminan \\x00 y se convierten números, además de eliminar el resto de texto basura
-        ascii_content = postprocesamiento(ascii_content)
-        diccionario = crear_diccionario(ascii_content)
+        # Convierte cada byte a ASCII o lo deja en hexadecimal si no es imprimible
+        asciiContent = "".join(chr(byte) if 32 <= byte <= 126 else f'\\x{byte:02x}' for byte in content)
 
-        graficar_top_10(diccionario)
-        
+        # Limpia el texto eliminando basura y convierte números en el formato correcto
+        cleanedText = cleanHexText(asciiContent)
+
+        # Crea un diccionario con las palabras y sus conteos
+        wordCountDictionary = createWordCountDictionary(cleanedText)
+
+        # Genera un histograma de las 10 palabras más comunes
+        plotTop10Words(wordCountDictionary)
+
     except FileNotFoundError:
-        print(f"Error: No se pudo encontrar el archivo {input_file}")
+        print(f"Error: No se pudo encontrar el archivo {inputFile}")
 
-input_file = 'texto_procesado.txt'
+# Especifica el archivo de entrada
+inputFile = 'texto_procesado.txt'
 
-hex_a_ascii(input_file)
+# Ejecuta la función principal
+convertHexToAscii(inputFile)
